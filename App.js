@@ -7,50 +7,30 @@
         labelWidth: 100,
         width: 300
     },
-  
-  addContent: function() {
-        var panel = Ext.create('Ext.container.Container', {
-            width: 1200,
-            layout: 'column',
-            itemId: 'parentPanel',
-            //componentCls: 'panel',
-            items: [
-                {
-                    xtype: 'container',
-                    itemId: 'childPanel1',
-                    columnWidth: 0.3
-                },
-                {
-                    xtype: 'container',
-                    itemId: 'childPanel2',
-                    columnWidth: 0.7
-                }
-            ]
-        });
-        this.add(panel);
-        //this._makeStore();
-    },
     
     onScopeChange: function() {
         
-        if (!this.down('#parentPanel')) {
+        if (!this.down('#parentContainer')) {
             var panel = Ext.create('Ext.panel.Panel', {
             width: 1200,
             layout: 'column',
-            itemId: 'parentPanel',
+            itemId: 'parentContainer',
             componentCls: 'panel',
             items: [
                 {
                     xtype: 'panel',
-                    //title: 'Stories',
-                    itemId: 'childPanel1',
+                    itemId: 'pickerContainer',
+                    columnWidth: 0.2
+                },
+                {
+                    xtype: 'panel',
+                    itemId: 'gridContainer',
                     columnWidth: 0.3
                 },
                 {
                     xtype: 'panel',
-                    //title: 'Test Sets with Test Cases',
-                    itemId: 'childPanel2',
-                    columnWidth: 0.7
+                    itemId: 'chartContainer',
+                    columnWidth: 0.5
                 }
             ]
         });
@@ -100,7 +80,7 @@
                 scope: this
             }
 	});
-	this.down('#childPanel1').add(testSetComboxBox);   
+	this.down('#pickerContainer').add(testSetComboxBox);   
     },
     
      _onTestSetSelected:function(testset){
@@ -157,7 +137,7 @@
    		],
    		width: 200
    	});
-   	this.down('#childPanel2').add(g);
+   	this.down('#gridContainer').add(g);
     },
 
      _onDataLoaded: function(store, data) {
