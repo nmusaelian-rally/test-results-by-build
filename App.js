@@ -25,14 +25,8 @@
                 {
                     xtype: 'panel',
                     itemId: 'gridContainer',
-                    columnWidth: 0.3
-                },
-                 {
-                    xtype: 'panel',
-                    itemId: 'chartContainer',
-                    columnWidth: 0.3
+                    columnWidth: 0.8
                 }
-               
             ]
         });
         this.add(panel);
@@ -71,11 +65,6 @@
                     
 		    if (combobox.getRecord()) {
                         this._onTestSetSelected(combobox.getRecord());
-		      //if (this.down('#myChart')) {
-			  //this.down('#myChart').destroy();
-			  
-		      //}
-			
 		    }	        
                 },
                 scope: this
@@ -85,8 +74,6 @@
     },
     
      _onTestSetSelected:function(testset){
-      //this._myMask = new Ext.LoadMask(Ext.getBody(), {msg:"Please wait.This may take long if you have thousands of results..."});
-      //this._myMask.show();
         var that = this;
 	var _store = Ext.create('Rally.data.WsapiDataStore', {
            model: 'Test Case Result',
@@ -103,20 +90,22 @@
            listeners: {
             load: function(store,records,success){
    		console.log("loaded %i records", records.length);
-   		this._updateGrid(_store);
+   		this._updateGrid(_store,records);
    	    },
             scope: this
             }
        });
      },
      
-    _updateGrid: function(_store){
+    _updateGrid: function(_store,records){
+        console.log('records', records);
         if (!this.down('#mygrid')) {
    		this._makeGrid(_store);
    	}
    	else{
    		this.down('#mygrid').reconfigure(_store);
    	}
+         this._prepareChart(records);
      },
        
     _makeGrid: function(_store){
@@ -139,117 +128,98 @@
    	});
    	this.down('#gridContainer').add(g);
     },
+    
+    _prepareChart:function(records){
+        var count = 0;
+       var that = this;
+        var builds = [];
+        that._series = [];
+        that._categories = [];
+        that._data = [];
+        that._records = [];
+        _.each(records, function(record){
+            that._records.push(record.data)
+            builds.push(record.data.Build);
+        });
+        var uniqueBuilds = _.uniq(builds);
+        console.log(that._records);
+        console.log(uniqueBuilds);
 
-     _onDataLoaded: function(store, data) {
-        console.log('data',data);
-          this._myMask.hide();
-	  var records = [];
-	  var verdictsGroups = ["Pass","Fail","Other"]
-
-	  var passCount = 0;
-	  var failCount = 0;
-          var otherCount = 0;
-	  
-	  var getColor = {
-	      'Pass': '#009900',
-	      'Fail': '#FF0000', 
-	      'Other': '#A0A0A0'
-	  };
-
-	  _.each(data, function(record) {
-	      verdict = record.get('Verdict');
-	      switch(verdict)
-	      {
-		case "Pass":
-		     passCount++;
-		      break;
-                case "Fail":
-		      failCount++;
-		      break;
-		case "Blocked":
-		      otherCount++;
-		      break;
-		case "Error":
-		      otherCount++;
-		      break;
-		case "Inconclusive":
-		      otherCount++;
-	      }
-	  });
+        that._resultsPerBuild = {};
+        that._resultsPerBuild = _.object(_.map(uniqueBuilds, function(item) {
+            return [item, count]
+        }));
+        
+        _.each(that._records, function(result) {
+            for (k in that._resultsPerBuild){
+                    if (k === result.Build) {
+                        that._resultsPerBuild[k]++;
+                }
+            }
+        });
+        console.log(that._resultsPerBuild);
+        
+        for (k in that._resultsPerBuild){
+            that._categories.push(k);
+            that._data.push({name: k, y: that._resultsPerBuild[k]})
+        }
+        
+        that._makeChart();
+    },
+    
+    _makeChart: function(){
+       if (this.down('#myChart')) {
+            this.remove('myChart');
+        }
+        this.add(
+        {
+            xtype: 'rallychart',
+            itemId: 'myChart',
+            //width: 600,
+            chartConfig: {
+                chart:{
+                type: 'column',
+                zoomType: 'xy'
+                },
+                title:{
+                    text: 'Results per Build'
+                },
+                xAxis: {
+                    title: {
+                        enabled: true,
+                        tickInterval: 1,
+                        text: 'tags'
+                },
+                startOnTick: true,
+                endOnTick: true,
+                showLastLabel: true,
+                allowDecimals: false,
+                },
+                yAxis:{
+                    title: {
+                        text: 'Results'
+                },
+                allowDecimals: false
+                },
+            },
+                            
+            chartData: { 
+                categories: this._categories,
+                series:[
+                    {
+                       type: 'column',
+                       name: 'Results',
+                       data: this._data
+                    }
+                    
+                ]
+                
+                
+            }
           
-          
-          /*
-	  if (this.down('#myChart')) {
-		      this.remove('myChart');
-	  }
-	  if (this.down('#myChart2')) {
-		      this.remove('myChart2');
-	  }
-	  this.add(
-	      {
-			xtype: 'rallychart',
-			height: 400,
-			storeType: 'Rally.data.WsapiDataStore',
-			store: this._myStore,
-			itemId: 'myChart',
-			chartConfig: {
-			    chart: {
-				type: 'pie'
-			    },
-			    title: {
-				text: 'TestCaseResults Verdict Counts',
-				align: 'center'
-			    },
-			    tooltip: {
-				formatter: function () {
-				   //return this.point.name + ': <b>' + Highcharts.numberFormat(this.percentage, 1) + '%</b><br />' + this.point.y;
-                                   return this.point.name + '<br />' + this.point.y; //by number. Comment out and uncomment the one above if want %
-				    }
-			    },
-			    plotOptions : {
-				 pie: {
-				    allowPointSelect: true,
-				    cursor: 'pointer',
-				    point: {
-					events: {
-					    click: function(event) {
-						var options = this.options;
-						alert(options.name + ' clicked');
-					    }
-					}
-				    },
-				    dataLabels: {
-					enabled: true,
-					color: '#000000',
-					connectorColor: '#000000'
-				    }
-				}
-			    }
-			},            
-			chartData: {
-			    series: [ 
-				{   
-				    name: 'Verdicts',
-				    data: [
-					{name: 'Pass',
-					y: passCount,
-					color: getColor['Pass']
-					},
-					{name: 'Fail',
-					y: failCount,
-					color: getColor['Fail']
-					},
-					{name: 'Other',
-					y: otherCount,
-					color: getColor['Other']
-					}
-				    ]
-				}
-			    ]
-			}
-	    }
-	);
-	this.down('#myChart')._unmask();*/
+        });
+        this.down('#myChart')._unmask();
+     
     }
      
  });
