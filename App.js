@@ -10,11 +10,11 @@
     
     onScopeChange: function() {
         
-        if (!this.down('#parentContainer')) {
+        if (!this.down('#parentPanel')) {
             var panel = Ext.create('Ext.panel.Panel', {
-            width: 1200,
+            //width: 1200,
             layout: 'column',
-            itemId: 'parentContainer',
+            itemId: 'parentPanel',
             componentCls: 'panel',
             items: [
                 {
@@ -27,11 +27,12 @@
                     itemId: 'gridContainer',
                     columnWidth: 0.3
                 },
-                {
+                 {
                     xtype: 'panel',
                     itemId: 'chartContainer',
-                    columnWidth: 0.5
+                    columnWidth: 0.3
                 }
+               
             ]
         });
         this.add(panel);
@@ -60,9 +61,9 @@
 			this._onTestSetSelected(combobox.getRecord());
 		    }
 		    else{
-			console.log('selected iteration has no testsets');
-			if (this.down('#grid')) {
-			    this.down('#grid').destroy();
+			console.log('selected release has no testsets');
+			if (this.down('#mygrid')) {
+			    this.down('#mygrid').destroy();
 			}
 		    }
 		},
@@ -100,7 +101,6 @@
            autoLoad: true,
            groupField: 'Build',
            listeners: {
-              //load: this._onDataLoaded,
             load: function(store,records,success){
    		console.log("loaded %i records", records.length);
    		this._updateGrid(_store);
