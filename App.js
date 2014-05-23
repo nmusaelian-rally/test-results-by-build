@@ -130,11 +130,24 @@
     },
     
     _prepareChart:function(records){
-        var count = 0;
+        //var verdictsGroups = ["Pass","Fail","Other"];
+        var passCount = 0;
+	var failCount = 0;
+        var otherCount = 0;
+
+	var getColor = {
+	      'Pass': '#009900',
+	      'Fail': '#FF0000', 
+	      'Other': '#A0A0A0'
+	};
+
+       
+       var count = 0;
        var that = this;
         var builds = [];
         that._series = [];
         that._categories = [];
+        that._series = [];
         that._data = [];
         that._records = [];
         _.each(records, function(record){
@@ -150,19 +163,93 @@
             return [item, count]
         }));
         
-        _.each(that._records, function(result) {
+        var passPerBuild = {};
+        var failPerBuild = {};
+        var otherPerBuild = {};
+        var passData = [];
+        var failData = [];
+        var otherData = [];
+        
+        passPerBuild = _.object(_.map(uniqueBuilds, function(item) {
+            return [item, count]
+        }));
+        
+        failPerBuild = _.object(_.map(uniqueBuilds, function(item) {
+            return [item, count]
+        }));
+        
+        otherPerBuild = _.object(_.map(uniqueBuilds, function(item) {
+            return [item, count]
+        }));
+        
+        _.each(that._records, function(result) { 
             for (k in that._resultsPerBuild){
                     if (k === result.Build) {
                         that._resultsPerBuild[k]++;
                 }
             }
+
+            if (result.Verdict === 'Pass') {
+                for (k in passPerBuild){
+                    if (k === result.Build) {
+                        passPerBuild[k]++;
+                    }
+                }
+            }
+            else if (result.Verdict === 'Fail') {
+                for (k in failPerBuild){
+                    if (k === result.Build) {
+                        failPerBuild[k]++;
+                    }
+                }
+            }
+            else{
+                for (k in otherPerBuild){
+                    if (k === result.Build) {
+                        otherPerBuild[k]++;
+                    }
+                }
+            }
+            
         });
         console.log(that._resultsPerBuild);
         
         for (k in that._resultsPerBuild){
             that._categories.push(k);
-            that._data.push({name: k, y: that._resultsPerBuild[k]})
+            //that._data.push({build: k, y: that._resultsPerBuild[k]})
         }
+        
+        for (k in passPerBuild){
+            passData.push({build: k, y: passPerBuild[k]})
+        }
+        
+        for (k in failPerBuild){
+            failData.push({build: k, y: failPerBuild[k]})
+        }
+        
+        for (k in otherPerBuild){
+            otherData.push({build: k, y: otherPerBuild[k]})
+        }
+
+       var allData = [];
+       allData.push(passData);
+       allData.push(failData);
+       allData.push(otherData);
+       
+       console.log('allData',allData);
+       
+       that._series.push({
+            name: 'Pass',
+            data: passData
+        })
+        that._series.push({
+            name: 'Fail',
+            data: failData
+        })
+         that._series.push({
+            name: 'Other',
+            data: otherData
+        })
         
         that._makeChart();
     },
@@ -184,11 +271,16 @@
                 title:{
                     text: 'Results per Build'
                 },
+                 plotOptions : {
+                    column: {
+                    stacking: 'normal'
+                    }
+                },
                 xAxis: {
                     title: {
                         enabled: true,
                         tickInterval: 1,
-                        text: 'tags'
+                        text: 'builds'
                 },
                 startOnTick: true,
                 endOnTick: true,
@@ -205,15 +297,15 @@
                             
             chartData: { 
                 categories: this._categories,
-                series:[
-                    {
-                       type: 'column',
-                       name: 'Results',
-                       data: this._data
-                    }
-                    
-                ]
-                
+                //series:[
+                //    {
+                //       type: 'column',
+                //       name: 'Results',
+                //       data: this._data
+                //    }
+                //    
+                //]
+                series: this._series
                 
             }
           
