@@ -3,7 +3,7 @@
     componentCls: 'app',
     scopeType: 'release',
     comboboxConfig: {
-        fieldLabel: 'Select a Release:',
+        fieldLabel: 'Select a Release',
         labelWidth: 100,
         width: 300
     },
@@ -12,24 +12,19 @@
         
         if (!this.down('#parentPanel')) {
             this._panel = Ext.create('Ext.panel.Panel', {
-            layout: 'column',
+            layout: 'hbox',
             itemId: 'parentPanel',
             componentCls: 'panel',
             items: [
                 {
-                    xtype: 'panel',
+                    xtype: 'container',
                     itemId: 'pickerContainer',
-                    columnWidth: 0.2
+                    flex: 1
                 },
                 {
-                    xtype: 'panel',
+                    xtype: 'container',
                     itemId: 'gridContainer',
-                    columnWidth: 0.3
-                },
-                {
-                    xtype: 'panel',
-                    itemId: 'chartContainer',
-                    columnWidth: 0.5
+                    flex: 1
                 }
             ]
         });
@@ -42,6 +37,9 @@
 	 if (this.down('#myChart')) {
 	    this.down('#myChart').destroy();
 	 }
+          if (this.down('#chartContainer')) {
+	    this.down('#chartContainer').destroy();
+	 }
 
             var testSetComboxBox = Ext.create('Rally.ui.combobox.ComboBox',{
 	    itemId: 'testSetComboxBox',
@@ -52,7 +50,7 @@
 		autoLoad: true,
 		filters: [this.getContext().getTimeboxScope().getQueryFilter()]
 	    },
-	    fieldLabel: 'select TestSet',
+	    fieldLabel: 'Select a TestSet',
 	    listeners:{
                 ready: function(combobox){
 		    if (combobox.getRecord()) {
@@ -108,13 +106,14 @@
    	}
    	else{
    		this.down('#mygrid').reconfigure(_store);
+                
    	}
         this._prepareChart(records);
      },
        
     _makeGrid: function(_store, records){
         console.log('make grid');
-   	var g = Ext.create('Rally.ui.grid.Grid', {
+   	this._grid = Ext.create('Rally.ui.grid.Grid', {
    		store: _store,
 		features: [{ftype:'grouping'}],
                 itemId: 'mygrid',
@@ -130,28 +129,28 @@
    		],
    		width: 200
    	});
-   	this.down('#gridContainer').add(g);
+   	this.down('#gridContainer').add(this._grid);
     },
     
     _prepareChart:function(records){
+        var that = this;
+        that._series = [];
+        that._categories = [];
+        
         var passCount = 0;
 	var failCount = 0;
         var otherCount = 0;
-
-       
-       var count = 0;
-       var that = this;
+        var count = 0;
+        
         var builds = [];
-        that._series = [];
-        that._categories = [];
+        
         recordsData = [];
         _.each(records, function(record){
             recordsData.push(record.data)
             builds.push(record.data.Build);
         });
+        
         var uniqueBuilds = _.uniq(builds);
-        //console.log(recordsData);
-        //console.log(uniqueBuilds);
 
         that._resultsPerBuild = {};
         that._resultsPerBuild = _.object(_.map(uniqueBuilds, function(item) {
@@ -207,7 +206,6 @@
             }
             
         });
-        //console.log(that._resultsPerBuild);
         
         for (k in that._resultsPerBuild){
             that._categories.push(k);
@@ -230,8 +228,6 @@
        allData.push(failData);
        allData.push(otherData);
        
-       //console.log('allData',allData);
-       
       
         that._series.push({
             name: 'Fail',
@@ -251,14 +247,16 @@
     },
     
     _makeChart: function(){
-       if (this.down('#myChart')) {
+        if (this.down('#myChart')) {
             this.remove('myChart');
         }
-        //this.down('#chartContainer').add(
-        //{
-            //xtype: 'rallychart',
-            var myChart = Ext.create('Rally.ui.chart.Chart', {
+        if (this.down('#chartContainer')) {
+	    this.down('#chartContainer').destroy();
+	}
+
+            this._chart = Ext.create('Rally.ui.chart.Chart', {
             itemId: 'myChart',
+            height: 500,
             chartConfig: {
                 chart:{
                 type: 'column',
@@ -296,11 +294,18 @@
                 series: this._series
                 
             }
-          
+   
         });
-        this.down('#chartContainer').add(myChart);    
+        
+        this._panel.add({
+                    xtype: 'container',
+                    itemId: 'chartContainer',
+                    flex: 2
+        });
+        
+        this.down('#chartContainer').add(this._chart);
+        
         this.down('#myChart')._unmask();
      
-    }
-     
+    } 
  });
