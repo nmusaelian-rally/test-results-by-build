@@ -77,16 +77,28 @@
     
      _onTestSetSelected:function(testset){
         var that = this;
+        this._filter = Ext.create('Rally.data.wsapi.Filter',  {
+                property: 'TestSet',
+                value: testset.get('_ref')
+	});
+        that._filter.toString();
 	var _store = Ext.create('Rally.data.WsapiDataStore', {
            model: 'Test Case Result',
 	   limit: Infinity,
            fetch: ['Verdict','TestCase','Build', 'FormattedID'],
-	   filters:[
-	    {
-	      property: 'TestSet',
-	      value: testset.get('_ref')
+	   //filters:[
+	   // {
+	   //   property: 'TestSet',
+	   //   value: testset.get('_ref')
+	   // }
+	   //],
+           filters: [that._filter],
+           sorters:[
+            {
+	      property: 'Build',
+	      direction: 'DESC'
 	    }
-	   ],
+           ],
            autoLoad: true,
            groupField: 'Build',
            listeners: {
@@ -112,8 +124,7 @@
      },
        
     _makeGrid: function(_store, records){
-        console.log('make grid');
-   	this._grid = Ext.create('Rally.ui.grid.Grid', {
+        this._grid = Ext.create('Rally.ui.grid.Grid', {
    		store: _store,
 		features: [{ftype:'grouping'}],
                 itemId: 'mygrid',
@@ -136,11 +147,13 @@
         var that = this;
         that._series = [];
         that._categories = [];
+        var limit = 5;
         
         var passCount = 0;
 	var failCount = 0;
         var otherCount = 0;
         var count = 0;
+        
         
         var builds = [];
         
@@ -150,10 +163,16 @@
             builds.push(record.data.Build);
         });
         
+        
         var uniqueBuilds = _.uniq(builds);
+        var size = _.size(uniqueBuilds);
+        console.log('uniqueBuilds',uniqueBuilds);
+        
+        last5uniqueBuilds = _.last(uniqueBuilds, limit)
+        console.log('last5uniqueBuilds',last5uniqueBuilds);
 
         that._resultsPerBuild = {};
-        that._resultsPerBuild = _.object(_.map(uniqueBuilds, function(item) {
+        that._resultsPerBuild = _.object(_.map(last5uniqueBuilds, function(item) {
             return [item, count]
         }));
         
@@ -164,15 +183,15 @@
         var failData = [];
         var otherData = [];
         
-        passPerBuild = _.object(_.map(uniqueBuilds, function(item) {
+        passPerBuild = _.object(_.map(last5uniqueBuilds, function(item) {
             return [item, count]
         }));
         
-        failPerBuild = _.object(_.map(uniqueBuilds, function(item) {
+        failPerBuild = _.object(_.map(last5uniqueBuilds, function(item) {
             return [item, count]
         }));
         
-        otherPerBuild = _.object(_.map(uniqueBuilds, function(item) {
+        otherPerBuild = _.object(_.map(last5uniqueBuilds, function(item) {
             return [item, count]
         }));
         
@@ -264,6 +283,9 @@
                 },
                 title:{
                     text: 'Results per Build'
+                },
+                 subtitle:{
+                    text: 'The chart limits number of builds to 5'
                 },
                  plotOptions : {
                     column: {
