@@ -11,8 +11,7 @@
     onScopeChange: function() {
         
         if (!this.down('#parentPanel')) {
-            var panel = Ext.create('Ext.panel.Panel', {
-            //width: 1200,
+            this._panel = Ext.create('Ext.panel.Panel', {
             layout: 'column',
             itemId: 'parentPanel',
             componentCls: 'panel',
@@ -25,11 +24,16 @@
                 {
                     xtype: 'panel',
                     itemId: 'gridContainer',
-                    columnWidth: 0.8
+                    columnWidth: 0.3
+                },
+                {
+                    xtype: 'panel',
+                    itemId: 'chartContainer',
+                    columnWidth: 0.5
                 }
             ]
         });
-        this.add(panel);
+        this.add(this._panel);
         }
         
        if (this.down('#testSetComboxBox')) {
@@ -105,10 +109,10 @@
    	else{
    		this.down('#mygrid').reconfigure(_store);
    	}
-         this._prepareChart(records);
+        this._prepareChart(records);
      },
        
-    _makeGrid: function(_store){
+    _makeGrid: function(_store, records){
         console.log('make grid');
    	var g = Ext.create('Rally.ui.grid.Grid', {
    		store: _store,
@@ -130,16 +134,9 @@
     },
     
     _prepareChart:function(records){
-        //var verdictsGroups = ["Pass","Fail","Other"];
         var passCount = 0;
 	var failCount = 0;
         var otherCount = 0;
-
-	var getColor = {
-	      'Pass': '#009900',
-	      'Fail': '#FF0000', 
-	      'Other': '#A0A0A0'
-	};
 
        
        var count = 0;
@@ -147,16 +144,14 @@
         var builds = [];
         that._series = [];
         that._categories = [];
-        that._series = [];
-        that._data = [];
-        that._records = [];
+        recordsData = [];
         _.each(records, function(record){
-            that._records.push(record.data)
+            recordsData.push(record.data)
             builds.push(record.data.Build);
         });
         var uniqueBuilds = _.uniq(builds);
-        console.log(that._records);
-        console.log(uniqueBuilds);
+        //console.log(recordsData);
+        //console.log(uniqueBuilds);
 
         that._resultsPerBuild = {};
         that._resultsPerBuild = _.object(_.map(uniqueBuilds, function(item) {
@@ -182,7 +177,7 @@
             return [item, count]
         }));
         
-        _.each(that._records, function(result) { 
+        _.each(recordsData, function(result) { 
             for (k in that._resultsPerBuild){
                     if (k === result.Build) {
                         that._resultsPerBuild[k]++;
@@ -212,23 +207,22 @@
             }
             
         });
-        console.log(that._resultsPerBuild);
+        //console.log(that._resultsPerBuild);
         
         for (k in that._resultsPerBuild){
             that._categories.push(k);
-            //that._data.push({build: k, y: that._resultsPerBuild[k]})
         }
         
         for (k in passPerBuild){
-            passData.push({build: k, y: passPerBuild[k]})
+            passData.push({build: k, y: passPerBuild[k], color: '#009900'})
         }
         
         for (k in failPerBuild){
-            failData.push({build: k, y: failPerBuild[k]})
+            failData.push({build: k, y: failPerBuild[k], color: '#FF0000'})
         }
         
         for (k in otherPerBuild){
-            otherData.push({build: k, y: otherPerBuild[k]})
+            otherData.push({build: k, y: otherPerBuild[k], color: '#FF8000'})
         }
 
        var allData = [];
@@ -236,20 +230,22 @@
        allData.push(failData);
        allData.push(otherData);
        
-       console.log('allData',allData);
+       //console.log('allData',allData);
        
-       that._series.push({
-            name: 'Pass',
-            data: passData
-        })
+      
         that._series.push({
             name: 'Fail',
             data: failData
         })
-         that._series.push({
+        that._series.push({
             name: 'Other',
             data: otherData
         })
+        that._series.push({
+            name: 'Pass',
+            data: passData
+        })
+         
         
         that._makeChart();
     },
@@ -258,11 +254,11 @@
        if (this.down('#myChart')) {
             this.remove('myChart');
         }
-        this.add(
-        {
-            xtype: 'rallychart',
+        //this.down('#chartContainer').add(
+        //{
+            //xtype: 'rallychart',
+            var myChart = Ext.create('Rally.ui.chart.Chart', {
             itemId: 'myChart',
-            //width: 600,
             chartConfig: {
                 chart:{
                 type: 'column',
@@ -297,19 +293,12 @@
                             
             chartData: { 
                 categories: this._categories,
-                //series:[
-                //    {
-                //       type: 'column',
-                //       name: 'Results',
-                //       data: this._data
-                //    }
-                //    
-                //]
                 series: this._series
                 
             }
           
         });
+        this.down('#chartContainer').add(myChart);    
         this.down('#myChart')._unmask();
      
     }
