@@ -1,4 +1,13 @@
- Ext.define('CustomApp', {
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TestCaseResults by Build</title>
+
+    <script type="text/javascript" src="/apps/x/sdk.js"></script>
+
+    <script type="text/javascript">
+        Rally.onReady(function () {
+                 Ext.define('CustomApp', {
     extend: 'Rally.app.TimeboxScopedApp',
     componentCls: 'app',
     scopeType: 'release',
@@ -325,3 +334,22 @@
      
     } 
  });
+
+            Rally.launchApp('CustomApp', {
+                name:"TestCaseResults by Build",
+	            parentRepos:""
+            });
+
+        });
+    </script>
+
+
+    <style type="text/css">
+        .app {
+     /* Add app styles here */
+}
+
+    </style>
+</head>
+<body></body>
+</html>
